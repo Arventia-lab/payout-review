@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payout Review</title>
+<style>
+:root{
+  --bg:#0e1116; --panel:#161b23; --panel2:#1d232d; --line:#2a323f;
+  --txt:#e6edf6; --dim:#8b97a8; --dim2:#5d6878;
+  --ok:#3fd68a; --warn:#ffb020; --bad:#ff5f56; --acc:#4da6ff; --gold:#ffd24a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;}
+.shell{display:grid;grid-template-columns:300px 1fr;min-height:100vh}
+
+/* ---------- header ---------- */
+header{grid-column:1/-1;border-bottom:1px solid var(--line);
+  padding:14px 22px;display:flex;align-items:baseline;gap:14px;background:var(--panel)}
+header h1{font-size:19px;margin:0;letter-spacing:-.3px}
+header h1 span{color:var(--gold)}
+.module{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim)}
+.demo-tag{margin-left:auto;font-size:10.5px;letter-spacing:.8px;color:var(--dim2);
+  border:1px solid var(--line);border-radius:20px;padding:3px 11px}
+
+/* ---------- queue ---------- */
+.queue{border-right:1px solid var(--line);background:var(--panel);overflow:auto;
+  max-height:calc(100vh - 52px)}
+.bucket-head{padding:11px 16px 7px;display:flex;align-items:center;gap:8px;
+  position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line)}
+.dot{width:7px;height:7px;border-radius:50%}
+.bucket-head b{font-size:11px;letter-spacing:.9px;text-transform:uppercase;font-weight:700}
+.bucket-head i{margin-left:auto;font-style:normal;font-size:11px;color:var(--dim2)}
+.row{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;
+  border-bottom:1px solid rgba(42,50,63,.5)}
+.row:hover{background:var(--panel2)}
+.row.on{background:var(--panel2);box-shadow:inset 3px 0 0 var(--acc)}
+.row .who{flex:1;min-width:0}
+.row .who b{display:block;font-size:13px;font-weight:600;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.row .amt{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--dim)}
+.row.on .amt{color:var(--txt)}
+
+/* ---------- main ---------- */
+main{padding:20px 24px 60px;overflow:auto;max-height:calc(100vh - 52px)}
+.hero{background:linear-gradient(135deg,#1a212b,#141a22);
+  border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:16px}
+.hero-top{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.hero .label{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+.hero .big{font-size:33px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1.1}
+.hero .sub{font-size:12px;color:var(--dim);margin-top:3px}
+.hero-right{margin-left:auto;text-align:right}
+.hero-right .who{font-size:17px;font-weight:700}
+.hero-right .meta{font-size:11.5px;color:var(--dim);margin-top:2px}
+
+.bars{margin-top:16px}
+.bar-line{display:flex;align-items:center;gap:11px;margin-bottom:7px;font-size:12px}
+.bar-line .tag{width:88px;color:var(--dim);flex:none}
+.bar-line .track{flex:1;height:9px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.bar-line .fill{height:100%;border-radius:6px}
+.bar-line .val{width:112px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;flex:none}
+
+.mini-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:12px;margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+.mini-stats .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- decision ---------- */
+.decision{border-radius:14px;padding:18px 22px;margin-bottom:16px;border:1px solid}
+.decision.high{background:rgba(255,95,86,.07);border-color:rgba(255,95,86,.35)}
+.decision.med {background:rgba(255,176,32,.07);border-color:rgba(255,176,32,.35)}
+.decision.low {background:rgba(63,214,138,.07);border-color:rgba(63,214,138,.32)}
+.verdict{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.verdict .pill{font-size:11px;font-weight:800;letter-spacing:1px;padding:4px 12px;border-radius:20px}
+.decision.high .pill{background:var(--bad);color:#2b0704}
+.decision.med  .pill{background:var(--warn);color:#2b1c00}
+.decision.low  .pill{background:var(--ok);color:#052314}
+.verdict .score{margin-left:auto;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.headline{font-size:16px;font-weight:600;line-height:1.45;margin-bottom:12px}
+.findings{margin:0;padding:0;list-style:none}
+.findings li{padding:7px 0 7px 18px;position:relative;font-size:13px;border-top:1px solid var(--line)}
+.findings li:before{content:"";position:absolute;left:2px;top:14px;width:6px;height:6px;
+  border-radius:50%;background:var(--bad)}
+.findings li.w:before{background:var(--warn)}
+.actions{display:flex;gap:9px;margin-top:15px}
+.actions button{border:1px solid var(--line);background:var(--panel2);color:var(--txt);
+  border-radius:9px;padding:9px 18px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.actions .go{background:var(--ok);border-color:var(--ok);color:#052314}
+.actions .no{background:var(--bad);border-color:var(--bad);color:#2b0704}
+.actions button:hover{filter:brightness(1.12)}
+
+/* ---------- panels ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px}
+.card h3{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);
+  margin:0 0 13px;font-weight:600}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--dim2);font-weight:600;padding:0 0 7px}
+td{padding:6px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+
+.group{margin-bottom:14px}
+.group>b{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--dim);
+  display:block;margin-bottom:8px}
+.chk{display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--line)}
+.chk .ic{width:15px;flex:none;font-size:13px;line-height:1.35;text-align:center}
+.chk .bd{flex:1;min-width:0}
+.chk .nm{font-size:13px;font-weight:600}
+.chk .dt{font-size:12px;color:var(--dim);margin-top:2px;line-height:1.5}
+.chk .vl{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums;
+  white-space:nowrap;flex:none;align-self:center}
+.risk{color:var(--bad)} .warnc{color:var(--warn)} .okc{color:var(--ok)}
+
+/* ---------- data bar ---------- */
+.databar{grid-column:1/-1;border-bottom:1px solid var(--line);background:var(--panel2);
+  padding:9px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12.5px}
+.databar .src{display:flex;align-items:center;gap:7px;color:var(--dim)}
+.databar .src b{color:var(--txt);font-weight:600}
+.databar .spacer{flex:1}
+.databar button, .databar label.btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--txt);border-radius:8px;
+  padding:6px 13px;font:inherit;font-size:12px;cursor:pointer;display:inline-block}
+.databar button:hover, .databar label.btn:hover{border-color:var(--acc);color:var(--acc)}
+.databar label.btn.primary{background:var(--acc);border-color:var(--acc);color:#06182b;font-weight:600}
+.databar label.btn.primary:hover{filter:brightness(1.1);color:#06182b}
+.databar input[type=file]{display:none}
+.loaded{font-size:11.5px;color:var(--ok)}
+.loadwarn{font-size:11.5px;color:var(--warn)}
+
+.sheet{grid-column:1/-1;background:var(--panel);border-bottom:1px solid var(--line);
+  padding:18px 22px;display:none}
+.sheet.open{display:block}
+.sheet h4{margin:0 0 4px;font-size:14px}
+.sheet p{margin:0 0 14px;font-size:12.5px;color:var(--dim);line-height:1.65;max-width:760px}
+.filespec{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.filespec div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.filespec b{display:block;font-size:12.5px;margin-bottom:5px}
+.filespec code{font-size:11px;color:var(--dim);line-height:1.8;font-family:inherit;display:block}
+.filespec em{font-style:normal;color:var(--dim2);font-size:11px}
+.req{color:var(--bad);font-size:10px;letter-spacing:.5px}
+.opt{color:var(--dim2);font-size:10px;letter-spacing:.5px}
+
+.legend{font-size:11px;color:var(--dim2);margin-top:9px;line-height:1.6}
+@media(max-width:1100px){ .shell{grid-template-columns:1fr} .grid2{grid-template-columns:1fr}
+  .queue{max-height:none;border-right:none;border-bottom:1px solid var(--line)} main{max-height:none} }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <h1>Payout <span>Review</span></h1>
+    <div class="module">First-line screening</div>
+    <div class="demo-tag">DEMO &middot; SYNTHETIC DATA</div>
+  </header>
+
+  <div class="databar">
+    <span class="src">Data source: <b id="srcName">Demo data</b></span>
+    <span id="loadNote"></span>
+    <span class="spacer"></span>
+    <button id="specBtn">What files do I need?</button>
+    <button id="resetBtn">Back to demo data</button>
+    <label class="btn primary" for="csvInput">Load my CSV files</label>
+    <input type="file" id="csvInput" accept=".csv,.txt" multiple>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <h4>No integration required</h4>
+    <p>Export these reports from your own admin panel and drop the files in.
+       Nothing is uploaded anywhere &mdash; the files are read in your browser and
+       never leave this machine. Give what you have: the account and payout files
+       are enough to start, and every extra file switches on more checks.
+       Column names are matched loosely, so <em>account_id</em>, <em>Account ID</em>
+       and <em>accountid</em> all work. Semicolon-separated files, comma decimals
+       (1.234,56) and day-first dates (31.12.2026) are handled.</p>
+    <div class="filespec">
+      <div><b>accounts.csv <span class="req">REQUIRED</span></b><code>account_id, username, registered, kyc,
+ip, device_fp, payment_fp, crypto_wallet,
+referrer, cashback, chargebacks,
+linked_sellers, payout_method_added</code></div>
+      <div><b>payouts.csv <span class="req">REQUIRED</span></b><code>payout_id, account_id, amount, date,
+method, status</code><em>status: pending = to review, anything else = history</em></div>
+      <div><b>orders.csv <span class="opt">OPTIONAL</span></b><code>account_id, date, amount, merchant,
+category, refunded, pending</code><em>switches on spend, refund and concentration checks</em></div>
+      <div><b>topups.csv <span class="opt">OPTIONAL</span></b><code>account_id, date, amount, method</code><em>switches on money-movement and rail-crossing checks</em></div>
+      <div><b>promotions.csv <span class="opt">OPTIONAL</span></b><code>account_id, date, kind, amount,
+requirement, completed,
+completed_in_high_liquidity</code><em>switches on promotion abuse checks</em></div>
+    </div>
+    <p style="margin-top:14px">
+      <button id="tplBtn">Download blank templates</button>
+    </p>
+  </div>
+
+  <nav class="queue" id="queue"></nav>
+  <main id="main"></main>
+
+</div>
+
+<script src="demo-data.js"></script>
+<script>
+/* ==================================================================
+   SETTINGS
+   Every threshold the business owns lives here. This is the only
+   block an operations team needs to touch.
+   ================================================================== */
+const SETTINGS = {
+  // --- money movement
+  large_topup            : 10000,   // money-movement logic applies above this
+  low_spend_ratio        : 0.35,    // spend / top-up below this = barely shopped.
+                                    // Most customers keep some balance, so this has to be
+                                    // genuinely low or the check fires on everyone.
+  movement_low           : 0.50,    // payout / top-up inside this band
+  movement_high          : 1.20,    //   plus low spend = pass-through
+  skim_low               : 1.10,    // payout / top-up inside this band
+  skim_high              : 1.60,    //   = cashing out a small, steady edge
+  card_share_warn        : 0.60,    // share of top-ups funded by card
+  crossing_threshold     : 0.50,    // share of top-ups matching the payout method
+  // --- account
+  large_payout           : 20000,   // account age only matters above this
+  new_account_days       : 21,
+  fast_payout_hours      : 24,      // top-up to payout gap
+  new_method_days        : 7,       // payout method added this recently
+  // --- promotions
+  promo_skim_margin      : 0.05,    // cleared the requirement within this margin
+  promo_high_liq_share   : 0.40,    // share of requirement met on resellable goods
+  goodwill_ratio         : 1.30,    // goodwill credit vs spend before cashing out
+  cashback_share         : 0.06,    // cashback / spend - worth a note
+  cashback_extreme       : 0.25,    //   - at this level the programme is the business
+  // --- marketplace behaviour
+  merchant_concentration : 0.55,    // share of spend at a single merchant
+  high_liq_concentration : 0.45,    // share of spend on resellable categories
+  refund_rate_limit      : 0.30,    // refunded orders / all orders
+  chargeback_limit       : 1,       // more than this many = risk
+  velocity_window_days   : 7,
+  velocity_count         : 4,       // payouts inside the window
+  // --- bands
+  low_band_max           : 19,
+  med_band_max           : 44,
+};
+
+/* Per-check weight. A check is not worth as much as the next one, and a
+   uniform score hides the dangerous cases behind a pile of small ones. */
+const WEIGHT = {
+  'KYC status'                : 30,
+  'Self-dealing'              : 30,
+  'High-liquidity spend'      : 30,
+  'Shared crypto wallet'      : 30,
+  'Merchant concentration'    : 30,
+  'Chargeback history'        : 28,
+  'Payment method crossing'   : 25,
+  'IP overlap'                : 25,
+  'Device / payment sharing'  : 25,
+  'Promotion requirement'     : 25,
+  'Goodwill credit pattern'   : 25,
+  'Refund rate'               : 25,
+  'Payout velocity'           : 22,
+  'New payout method'         : 22,
+  'Payout vs top-up'          : 20,
+  'Top-up funding mix'        : 20,
+  'Pending orders'            : 20,
+  'Prior rejections'          : 20,
+  'Referral cluster'          : 15,
+  'Cashback share'            : 15,
+  'Account age'               : 12,
+  'Top-up to payout gap'      : 10,
+};
+
+/* ==================================================================
+   helpers
+   ================================================================== */
+const MONEY = n => (isFinite(n) ? '$' + Math.round(n).toLocaleString('en-US') : '—');
+const PCT   = n => (isFinite(n) ? (n * 100).toFixed(0) + '%' : '—');
+const T     = s => new Date(String(s).replace(' ', 'T'));
+const sum   = (a, f) => a.reduce((t, x) => t + (f ? f(x) : x), 0);
+const days  = (a, b) => (b - a) / 86400000;
+
+/* These follow whichever dataset is loaded, so they are not fixed. */
+let NOW = T(DEMO.today);
+let HIGH_LIQ = DEMO.high_liquidity_categories || [];
+
+/* ==================================================================
+   CHECKS
+   Each returns: name, state (risk | warn | ok), value, detail.
+   ================================================================== */
+function runChecks(u, p){
+  const out = [];
+  const add = (name, state, value, detail, hardStop) =>
+    out.push({name, state, value, detail, hardStop: !!hardStop});
+
+  const topups   = u.topups || [];
+  const orders   = u.orders || [];
+  const promos   = u.promos || [];
+  const settled  = orders.filter(o => !o.pending);
+  const refunded = orders.filter(o => o.refunded);
+  const pending  = orders.filter(o => o.pending);
+
+  const topupTotal = sum(topups, t => t.amount);
+  const spend      = sum(settled.filter(o => !o.refunded), o => o.amount);
+  const payout     = p.amount;
+  const spendRatio = topupTotal ? spend / topupTotal : 0;
+  const payoutRatio= topupTotal ? payout / topupTotal : 0;
+
+  /* ---------- 1. payout vs top-up ---------- */
+  if(topupTotal > 0){
+    const heavy = payoutRatio > SETTINGS.skim_high && spendRatio < SETTINGS.low_spend_ratio;
+    add('Payout vs top-up', heavy ? 'risk' : (payoutRatio > 1 ? 'warn' : 'ok'),
+        PCT(payoutRatio),
+        'Requested ' + MONEY(payout) + ' against ' + MONEY(topupTotal) + ' funded and ' +
+        MONEY(spend) + ' spent. ' +
+        (heavy ? 'Taking out more than was put in while barely shopping.'
+               : 'Within the range normal accounts produce.'));
+  } else add('Payout vs top-up','ok','—','No funding recorded.');
+
+  /* ---------- 2. top-up funding mix ---------- */
+  const cardTotal = sum(topups.filter(t => /Card/i.test(t.method)), t => t.amount);
+  const cardShare = topupTotal ? cardTotal / topupTotal : 0;
+  add('Top-up funding mix',
+      cardShare >= SETTINGS.card_share_warn && topupTotal >= SETTINGS.large_topup ? 'warn' : 'ok',
+      PCT(cardShare) + ' card',
+      PCT(cardShare) + ' of funding came from cards. Card funding followed by a bank or ' +
+      'wallet payout is the shape money movement takes.');
+
+  /* ---------- 3. payment method crossing ----------
+     Card and bank are the same rail: a card top-up is legally refunded to the
+     card, but a wallet balance is paid to a bank account, so card-in / bank-out
+     is ordinary. The signal is money changing RAIL - banking to crypto or back. */
+  const rail = m => /crypto/i.test(m) ? 'crypto' : 'banking';
+  const payoutRail = rail(p.method);
+  const sameRail   = sum(topups.filter(t => rail(t.method) === payoutRail), t => t.amount);
+  const sameShare  = topupTotal ? sameRail / topupTotal : 0;
+  if(topupTotal > 0){
+    const crossing = sameShare < SETTINGS.crossing_threshold;
+    add('Payment method crossing', crossing ? 'risk' : 'ok', PCT(sameShare) + ' same rail',
+        crossing
+          ? 'Cashing out to ' + p.method + ' but only ' + PCT(sameShare) +
+            ' of funding arrived on that rail. Money entering as ' +
+            (payoutRail === 'crypto' ? 'bank or card and leaving as crypto'
+                                     : 'crypto and leaving as bank') +
+            ' breaks the audit trail, which is the point of doing it.'
+          : 'Payout leaves on the same rail the money arrived on.');
+  } else add('Payment method crossing','ok','—','No funding to compare.');
+
+  /* ---------- 4. money movement ---------- */
+  if(topupTotal >= SETTINGS.large_topup){
+    const passthrough = spendRatio < SETTINGS.low_spend_ratio &&
+                        payoutRatio >= SETTINGS.movement_low &&
+                        payoutRatio <= SETTINGS.movement_high;
+    add('Payout vs top-up pattern', passthrough ? 'risk' : 'ok',
+        passthrough ? 'pass-through' : 'normal',
+        passthrough
+          ? 'Funded ' + MONEY(topupTotal) + ', spent only ' + MONEY(spend) +
+            ', now withdrawing ' + MONEY(payout) + '. The account is being used to move money, not to shop.'
+          : 'Spending is consistent with the funding.');
+  }
+
+  /* ---------- 5. KYC ----------
+     A hard stop. Identity verification is not one signal among many: an
+     unverified account cannot be paid, whatever the rest of the file says. */
+  add('KYC status', u.kyc === 'Verified' ? 'ok' : 'risk', u.kyc,
+      u.kyc === 'Verified' ? 'Identity verified.'
+        : 'Identity is not verified. No payout clears in this state regardless of anything else on the account.',
+      u.kyc !== 'Verified');
+
+  /* ---------- 6. account age ---------- */
+  const age = days(T(u.registered), NOW);
+  const youngRisk = age < SETTINGS.new_account_days && payout >= SETTINGS.large_payout;
+  add('Account age', youngRisk ? 'risk' : (age < SETTINGS.new_account_days ? 'warn' : 'ok'),
+      Math.round(age) + ' days',
+      Math.round(age) + ' days old. ' +
+      (youngRisk ? 'A large payout this early is the pattern of an account opened to be cashed out.'
+                 : 'Age alone carries little weight below the large-payout threshold.'));
+
+  /* ---------- 7. device / payment sharing ---------- */
+  const shared = DEMO.users.filter(o => o.id !== u.id &&
+        (o.device_fp === u.device_fp || o.payment_fp === u.payment_fp));
+  add('Device / payment sharing', shared.length >= 2 ? 'risk' : (shared.length ? 'warn' : 'ok'),
+      shared.length + ' account' + (shared.length === 1 ? '' : 's'),
+      shared.length
+        ? 'Shares a device or card fingerprint with ' + shared.map(o => o.username).join(', ') +
+          '. Separate people do not share both.'
+        : 'No device or card overlap.');
+
+  /* ---------- 8. IP overlap ---------- */
+  const sameIp = DEMO.users.filter(o => o.id !== u.id && o.ip === u.ip);
+  add('IP overlap', sameIp.length >= 2 ? 'risk' : (sameIp.length ? 'warn' : 'ok'),
+      sameIp.length + ' account' + (sameIp.length === 1 ? '' : 's'),
+      sameIp.length ? 'Same IP as ' + sameIp.map(o => o.username).join(', ') + '.'
+                    : 'No IP overlap.');
+
+  /* ---------- 9. referral cluster ---------- */
+  const sameRef = DEMO.users.filter(o => o.id !== u.id && o.referrer === u.referrer);
+  const clusterRisk = sameRef.length >= 2 && shared.length >= 1;
+  add('Referral cluster', clusterRisk ? 'risk' : (sameRef.length >= 2 ? 'warn' : 'ok'),
+      (sameRef.length + 1) + ' accounts',
+      sameRef.length
+        ? 'Referrer ' + u.referrer + ' brought ' + (sameRef.length + 1) + ' of the accounts in this queue. ' +
+          (clusterRisk ? 'Combined with the shared device this is one person, not a referral programme.'
+                       : 'On its own a shared referrer proves nothing.')
+        : 'No referral overlap.');
+
+  /* ---------- 10. shared crypto wallet ---------- */
+  if(u.crypto_wallet){
+    const w = DEMO.users.filter(o => o.id !== u.id && o.crypto_wallet === u.crypto_wallet);
+    add('Shared crypto wallet', w.length ? 'risk' : 'ok', w.length ? w.length + ' match' : 'unique',
+        w.length ? 'Same wallet as ' + w.map(o => o.username).join(', ') +
+                   '. Wallets are not shared by unrelated customers.'
+                 : 'Wallet is not used by any other account.');
+  }
+
+  /* ---------- 11. prior rejections ---------- */
+  const rej = u.rejection_history || [];
+  add('Prior rejections', rej.length ? 'risk' : 'ok', rej.length + '',
+      rej.length ? rej.map(r => r.date + ' — ' + r.reason).join(' · ')
+                 : 'No payout has been rejected on this account before.');
+
+  /* ---------- 12. top-up to payout gap ---------- */
+  if(topups.length){
+    const last = topups.map(t => T(t.date)).sort((a,b) => b - a)[0];
+    const gapH = (T(p.date) - last) / 3600000;
+    add('Top-up to payout gap', gapH < SETTINGS.fast_payout_hours ? 'warn' : 'ok',
+        Math.round(gapH) + 'h',
+        'Last funding was ' + Math.round(gapH) + ' hours before this request.' +
+        (gapH < SETTINGS.fast_payout_hours ? ' Money in and straight back out.' : ''));
+  }
+
+  /* ---------- 13. new payout method ---------- */
+  if(u.payout_method_added){
+    const d = days(T(u.payout_method_added), NOW);
+    const fresh = d <= SETTINGS.new_method_days && payout >= SETTINGS.large_payout;
+    add('New payout method', fresh ? 'risk' : 'ok', Math.round(d) + ' days',
+        'Payout destination was added ' + Math.round(d) + ' days ago. ' +
+        (fresh ? 'A large payout to a destination added this recently is what an account takeover looks like.'
+               : 'Long enough to be the customer’s own.'));
+  }
+
+  /* ---------- 14. promotion requirement ---------- */
+  const credits = promos.filter(b => b.kind !== 'Goodwill Credit');
+  if(credits.length){
+    const req  = sum(credits, b => b.requirement);
+    const done = sum(credits, b => b.completed);
+    const margin = req ? (done - req) / req : 1;
+    const skim = margin >= 0 && margin <= SETTINGS.promo_skim_margin;
+    add('Promotion requirement', skim ? 'risk' : 'ok',
+        PCT(done / (req || 1)),
+        'Required ' + MONEY(req) + ', completed ' + MONEY(done) + '. ' +
+        (skim ? 'Stopped within ' + PCT(margin) + ' of the line and came straight here. ' +
+                'That is a requirement being cleared, not a customer shopping.'
+              : 'Completion is not hugging the threshold.'));
+
+    const inLiq = sum(credits, b => b.completed_in_high_liquidity);
+    const liqShare = done ? inLiq / done : 0;
+    add('Promotion requirement mix',
+        liqShare >= SETTINGS.promo_high_liq_share ? 'risk' : 'ok', PCT(liqShare),
+        PCT(liqShare) + ' of the requirement was completed on resellable goods ' +
+        '(' + HIGH_LIQ.join(', ') + '). ' +
+        (liqShare >= SETTINGS.promo_high_liq_share
+          ? 'Spend that converts straight back to cash should not count towards a promotion.'
+          : 'Requirement met on ordinary goods.'));
+  }
+
+  /* ---------- 15. goodwill credit pattern ---------- */
+  const good = promos.filter(b => b.kind === 'Goodwill Credit');
+  if(good.length){
+    const gTotal = sum(good, b => b.amount);
+    const ratio  = gTotal ? sum(good, b => b.completed) / gTotal : 0;
+    const abuse  = ratio < SETTINGS.goodwill_ratio;
+    add('Goodwill credit pattern', abuse ? 'risk' : 'warn',
+        good.length + ' credits',
+        'Received ' + good.length + ' goodwill credits worth ' + MONEY(gTotal) + '. ' +
+        (abuse ? 'Spending barely moved afterwards — the complaints are the business model, not the shopping.'
+               : 'Spending continued after the credits.'));
+  }
+
+  /* ---------- 16. cashback share ---------- */
+  const cb = u.cashback_earned || 0;
+  const cbShare = spend ? cb / spend : 0;
+  add('Cashback share',
+      cbShare >= SETTINGS.cashback_extreme ? 'risk'
+        : cbShare >= SETTINGS.cashback_share ? 'warn' : 'ok',
+      PCT(cbShare),
+      MONEY(cb) + ' of cashback against ' + MONEY(spend) + ' of spend. ' +
+      (cbShare >= SETTINGS.cashback_extreme
+        ? 'At this level the account is farming the rewards programme, not shopping through it.'
+        : cbShare >= SETTINGS.cashback_share
+        ? 'Earning more from the programme than it was designed to give.'
+        : 'Normal for the programme.'));
+
+  /* ---------- 17. self-dealing ---------- */
+  const linked = u.seller_accounts_linked || [];
+  if(linked.length){
+    const toSelf = sum(settled.filter(o => linked.includes(o.merchant)), o => o.amount);
+    const share  = spend ? toSelf / spend : 0;
+    add('Self-dealing', share > 0.2 ? 'risk' : 'warn', PCT(share),
+        PCT(share) + ' of spend (' + MONEY(toSelf) + ') went to ' + linked.join(', ') +
+        ' — a seller account linked to this customer. Buying from yourself turns promotion credit into cash.');
+  } else add('Self-dealing','ok','—','No linked seller account.');
+
+  /* ---------- 18. merchant concentration ----------
+     Measured on kept orders only. Counting refunded orders here inflates the
+     share of whichever merchant the returns happened to land on. */
+  const kept = settled.filter(o => !o.refunded);
+  if(kept.length >= 10){
+    const byM = {};
+    kept.forEach(o => byM[o.merchant] = (byM[o.merchant] || 0) + o.amount);
+    const top = Object.entries(byM).sort((a,b) => b[1] - a[1])[0];
+    const share = spend ? top[1] / spend : 0;
+    const conc = share >= SETTINGS.merchant_concentration && !linked.includes(top[0]);
+    add('Merchant concentration', conc ? 'risk' : 'ok', PCT(share),
+        PCT(share) + ' of spend went to ' + top[0] + '. ' +
+        (conc ? 'A single seller taking this much of one customer’s spend is an arrangement, not a preference.'
+              : 'Spend is spread across sellers.'));
+  }
+
+  /* ---------- 19. high-liquidity spend ---------- */
+  if(settled.length >= 8){
+    const liq = sum(settled.filter(o => HIGH_LIQ.includes(o.category)), o => o.amount);
+    const share = spend ? liq / spend : 0;
+    const conc = share >= SETTINGS.high_liq_concentration;
+    add('High-liquidity spend', conc ? 'risk' : 'ok', PCT(share),
+        PCT(share) + ' of spend went on ' + HIGH_LIQ.join(', ') + '. ' +
+        (conc ? 'These convert straight back to cash on a resale market. This is not shopping, it is a cash-out route.'
+              : 'Normal share of resellable goods.'));
+  }
+
+  /* ---------- 20. refund rate ---------- */
+  if(orders.length >= 10){
+    const rate = refunded.length / orders.length;
+    add('Refund rate', rate >= SETTINGS.refund_rate_limit ? 'risk' : 'ok', PCT(rate),
+        refunded.length + ' of ' + orders.length + ' orders were refunded. ' +
+        (rate >= SETTINGS.refund_rate_limit
+          ? 'At this rate the refunds are the transaction, not an accident.'
+          : 'Within normal returns behaviour.'));
+  }
+
+  /* ---------- 21. chargebacks ---------- */
+  add('Chargeback history', (u.chargebacks || 0) > SETTINGS.chargeback_limit ? 'risk'
+        : ((u.chargebacks || 0) ? 'warn' : 'ok'),
+      (u.chargebacks || 0) + '',
+      (u.chargebacks || 0)
+        ? u.chargebacks + ' chargeback(s) on file. The customer has already taken money back through the card scheme.'
+        : 'No chargebacks.');
+
+  /* ---------- 22. pending orders ---------- */
+  if(pending.length){
+    const val = sum(pending, o => o.amount);
+    add('Pending orders', 'risk', pending.length + ' open',
+        pending.length + ' orders worth ' + MONEY(val) + ' are still open. ' +
+        'Releasing the balance now means the platform carries the refund risk on orders it has not settled.');
+  } else add('Pending orders','ok','0','No open orders.');
+
+  /* ---------- 23. payout velocity ---------- */
+  const recent = (u.past_payouts || []).filter(x =>
+      days(T(x.date), NOW) <= SETTINGS.velocity_window_days);
+  add('Payout velocity', recent.length >= SETTINGS.velocity_count ? 'risk' : 'ok',
+      recent.length + ' in ' + SETTINGS.velocity_window_days + 'd',
+      recent.length
+        ? recent.length + ' payouts worth ' + MONEY(sum(recent, x => x.amount)) +
+          ' cleared in the last ' + SETTINGS.velocity_window_days + ' days. ' +
+          (recent.length >= SETTINGS.velocity_count
+            ? 'Splitting one large cash-out into several smaller ones is how a limit gets walked around.' : '')
+        : 'No recent payouts.');
+
+  return out;
+}
+
+/* ==================================================================
+   SCORE
+   ================================================================== */
+/* Score is the weight that actually fired, capped at 100 - not a share of every
+   check that ran. Dividing by all checks buries three serious findings under
+   twenty passes and produces a reassuring number for a case that should stop. */
+function score(checks){
+  let got = 0;
+  checks.forEach(c => {
+    const w = WEIGHT[c.name] || 15;
+    if(c.state === 'risk') got += w;
+    else if(c.state === 'warn') got += w * 0.4;
+  });
+  return Math.min(100, Math.round(got));
+}
+
+/* A single hard failure must never be averaged away by a pile of passes. */
+function band(s, checks){
+  const risks = checks.filter(c => c.state === 'risk').length;
+  let name;
+  if(checks.some(c => c.hardStop)) name = 'HIGH';
+  else if(risks >= 2) name = 'HIGH';
+  else if(risks === 1) name = s > SETTINGS.med_band_max ? 'HIGH' : 'MEDIUM';
+  else if(s <= SETTINGS.low_band_max) name = 'LOW';
+  else if(s <= SETTINGS.med_band_max) name = 'MEDIUM';
+  else name = 'HIGH';
+
+  return {
+    name,
+    cls:  name === 'HIGH' ? 'high' : name === 'MEDIUM' ? 'med' : 'low',
+    verdict: name === 'HIGH' ? 'HOLD FOR REVIEW'
+           : name === 'MEDIUM' ? 'CHECK BEFORE RELEASE'
+           : 'CLEAR TO RELEASE',
+  };
+}
+
+/* ==================================================================
+   RENDER
+   ================================================================== */
+const BUCKETS = [
+  {name:'Hold for review',     band:'HIGH',   color:'var(--bad)'},
+  {name:'Check before release',band:'MEDIUM', color:'var(--warn)'},
+  {name:'Clear to release',    band:'LOW',    color:'var(--ok)'},
+];
+
+let ROWS = [], current = null;
+
+/* Recompute everything from whatever DEMO currently holds. Called on load and
+   again every time the user swaps in their own files. */
+function rebuild(){
+  NOW = T(DEMO.today);
+  HIGH_LIQ = DEMO.high_liquidity_categories || [];
+  ROWS = DEMO.pending_payouts.map(p => {
+    const u = DEMO.users.find(x => x.id === p.user);
+    if(!u) return null;
+    const c = runChecks(u, p);
+    const s = score(c);
+    return {p, u, checks:c, score:s, band:band(s, c)};
+  }).filter(Boolean).sort((a, b) => b.score - a.score);
+  current = ROWS[0] || null;
+  drawQueue();
+  drawMain();
+}
+
+function drawQueue(){
+  const q = document.getElementById('queue');
+  q.innerHTML = '';
+  BUCKETS.forEach(b => {
+    const rows = ROWS.filter(r => r.band.name === b.band);
+    const head = document.createElement('div');
+    head.className = 'bucket-head';
+    head.innerHTML = '<span class="dot" style="background:' + b.color + '"></span>' +
+                     '<b style="color:' + b.color + '">' + b.name + '</b>' +
+                     '<i>' + rows.length + '</i>';
+    q.appendChild(head);
+    rows.forEach(r => {
+      const el = document.createElement('div');
+      el.className = 'row' + (r === current ? ' on' : '');
+      el.innerHTML = '<div class="who"><b>' + r.u.username + '</b></div>' +
+                     '<div class="amt">' + MONEY(r.p.amount) + '</div>';
+      el.onclick = () => { current = r; drawQueue(); drawMain(); };
+      q.appendChild(el);
+
+    });
+  });
+}
+
+function bar(tag, value, max, color){
+  const w = max ? Math.max(2, Math.min(100, value / max * 100)) : 0;
+  return '<div class="bar-line"><span class="tag">' + tag + '</span>' +
+         '<span class="track"><span class="fill" style="width:' + w + '%;background:' + color + '"></span></span>' +
+         '<span class="val">' + MONEY(value) + '</span></div>';
+}
+
+function drawMain(){
+  if(!current){
+    document.getElementById('main').innerHTML =
+      '<div class="card"><h3>Nothing to review</h3><div class="legend">' +
+      'No pending payout matched an account. Check that the account id in your ' +
+      'payout file matches the one in your account file.</div></div>';
+    return;
+  }
+  const {u, p, checks, score:s, band:b} = current;
+
+  const topupTotal = sum(u.topups || [], t => t.amount);
+  const settled    = (u.orders || []).filter(o => !o.pending && !o.refunded);
+  const spend      = sum(settled, o => o.amount);
+  const refunds    = sum((u.orders || []).filter(o => o.refunded), o => o.amount);
+  const net        = topupTotal - p.amount;
+  const maxBar     = Math.max(topupTotal, spend, p.amount, 1);
+  const age        = Math.round(days(T(u.registered), NOW));
+
+  /* ---- findings: at most four, worst first ---- */
+  const order = {risk:0, warn:1, ok:2};
+  const found = checks.filter(c => c.state !== 'ok')
+                      .sort((x, y) => (order[x.state] - order[y.state]) ||
+                                      ((WEIGHT[y.name] || 0) - (WEIGHT[x.name] || 0)))
+                      .slice(0, 4);
+
+  const headline = b.name === 'HIGH'
+    ? 'Do not release yet. ' + found.length + ' issue' + (found.length === 1 ? '' : 's') +
+      ' need a decision from a reviewer.'
+    : b.name === 'MEDIUM'
+    ? 'Nothing disqualifying, but one point is worth a look before the money leaves.'
+    : 'No issues found. Funding, spending and history are consistent.';
+
+  document.getElementById('main').innerHTML = `
+
+  <div class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="label">Net position</div>
+        <div class="big" style="color:${net >= 0 ? 'var(--ok)' : 'var(--bad)'}">${MONEY(net)}</div>
+        <div class="sub">${net >= 0
+          ? 'Funded ' + MONEY(net) + ' more than this payout takes out.'
+          : 'This payout takes out ' + MONEY(-net) + ' more than was ever funded.'}</div>
+      </div>
+      <div class="hero-right">
+        <div class="who">${u.username}</div>
+        <div class="meta">${p.id} &middot; ${p.method} &middot; ${p.date}</div>
+        <div class="meta">${u.kyc} &middot; ${age} days old</div>
+      </div>
+    </div>
+
+    <div class="bars">
+      ${bar('Funded in',  topupTotal, maxBar, 'var(--acc)')}
+      ${bar('Spent',      spend,      maxBar, 'var(--dim)')}
+      ${bar('Requested',  p.amount,   maxBar, net >= 0 ? 'var(--ok)' : 'var(--bad)')}
+    </div>
+
+    <div class="mini-stats">
+      <div><div class="label">Orders</div><div class="v">${(u.orders||[]).length}</div></div>
+      <div><div class="label">Refunded</div><div class="v">${MONEY(refunds)}</div></div>
+      <div><div class="label">Cashback</div><div class="v">${MONEY(u.cashback_earned||0)}</div></div>
+      <div><div class="label">Prior payouts</div><div class="v">${(u.past_payouts||[]).length}</div></div>
+    </div>
+  </div>
+
+  <div class="decision ${b.cls}">
+    <div class="verdict">
+      <span class="pill">${b.verdict}</span>
+      <span style="font-size:13px;color:var(--dim)">${b.name} risk</span>
+      <span class="score">score ${s} / 100</span>
+    </div>
+    <div class="headline">${headline}</div>
+    <ul class="findings">
+      ${found.length
+        ? found.map(f => '<li class="' + (f.state === 'warn' ? 'w' : '') + '"><b>' +
+            f.name + '</b> — ' + shorten(f.detail) + '</li>').join('')
+        : '<li style="border:none" class="w"><b>Clean</b> — nothing on this account contradicts the payout.</li>'}
+    </ul>
+    <div class="actions">
+      <button class="go">Release</button>
+      <button>Hold</button>
+      <button class="no">Reject</button>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Where the money went</h3>
+      ${categoryTable(u)}
+    </div>
+    <div class="card">
+      <h3>Linked accounts</h3>
+      ${linkMap(u)}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>All checks</h3>
+    ${checkGroups(checks)}
+    <div class="legend">
+      Every threshold behind these checks sits in one settings block, owned by the
+      operations team. Nothing here is a black box: each line states what was measured,
+      what it was measured against, and why it matters. The decision stays with a person.
+    </div>
+  </div>`;
+}
+
+function shorten(t){
+  const first = String(t).split('. ')[0];
+  return first.length > 150 ? first.slice(0, 147) + '…' : first + '.';
+}
+
+function categoryTable(u){
+  const settled = (u.orders || []).filter(o => !o.pending && !o.refunded);
+  if(!settled.length) return '<div class="legend">No settled orders.</div>';
+  const by = {};
+  settled.forEach(o => {
+    by[o.category] = by[o.category] || {n:0, v:0};
+    by[o.category].n++; by[o.category].v += o.amount;
+  });
+  const total = sum(Object.values(by), x => x.v);
+  const rows = Object.entries(by).sort((a,b) => b[1].v - a[1].v).slice(0, 7);
+  return '<table><tr><th>Category</th><th class="r">Orders</th><th class="r">Value</th><th class="r">Share</th></tr>' +
+    rows.map(([k, v]) => {
+      const liq = HIGH_LIQ.includes(k);
+      return '<tr><td' + (liq ? ' class="risk"' : '') + '>' + k +
+             (liq ? ' ⚑' : '') + '</td><td class="r">' + v.n + '</td><td class="r">' +
+             MONEY(v.v) + '</td><td class="r">' + PCT(v.v / total) + '</td></tr>';
+    }).join('') + '</table>' +
+    (rows.some(([k]) => HIGH_LIQ.includes(k))
+      ? '<div class="legend">⚑ resells easily — treated as a cash-out route, not a purchase.</div>' : '');
+}
+
+function linkMap(u){
+  const linked = DEMO.users.filter(o => o.id !== u.id && (
+      o.device_fp === u.device_fp || o.payment_fp === u.payment_fp ||
+      o.ip === u.ip || (u.crypto_wallet && o.crypto_wallet === u.crypto_wallet)));
+  if(!linked.length)
+    return '<div class="legend">No other account shares this account’s device, card, IP or wallet.</div>';
+
+  const W = 420, H = 150, cx = W/2, cy = H/2;
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">';
+  linked.forEach((o, i) => {
+    const a = (Math.PI * 2 * i) / linked.length - Math.PI/2;
+    const x = cx + Math.cos(a) * 130, y = cy + Math.sin(a) * 52;
+    const how = [];
+    if(o.device_fp === u.device_fp)  how.push('device');
+    if(o.payment_fp === u.payment_fp)how.push('card');
+    if(o.ip === u.ip)                how.push('IP');
+    if(u.crypto_wallet && o.crypto_wallet === u.crypto_wallet) how.push('wallet');
+    svg += '<line x1="'+cx+'" y1="'+cy+'" x2="'+x+'" y2="'+y+'" stroke="#ff5f56" stroke-width="1.4" opacity=".55"/>';
+    svg += '<circle cx="'+x+'" cy="'+y+'" r="5" fill="#ff5f56"/>';
+    svg += '<text x="'+x+'" y="'+(y-11)+'" fill="#8b97a8" font-size="9.5" text-anchor="middle">'+o.username+'</text>';
+    svg += '<text x="'+x+'" y="'+(y+18)+'" fill="#5d6878" font-size="8.5" text-anchor="middle">'+how.join(' + ')+'</text>';
+  });
+  svg += '<circle cx="'+cx+'" cy="'+cy+'" r="8" fill="#ffd24a"/>';
+  svg += '<text x="'+cx+'" y="'+(cy+24)+'" fill="#e6edf6" font-size="10" text-anchor="middle">'+u.username+'</text>';
+  svg += '</svg>';
+  return svg + '<div class="legend">' + linked.length +
+         ' account(s) connect to this one. Behaviour finds the pattern; device, card and IP confirm it.</div>';
+}
+
+function checkGroups(checks){
+  const GROUPS = {
+    'Money movement': ['Payout vs top-up','Payout vs top-up pattern','Top-up funding mix',
+                       'Payment method crossing','Top-up to payout gap'],
+    'Account and linkage': ['KYC status','Account age','Device / payment sharing','IP overlap',
+                            'Referral cluster','Shared crypto wallet','Prior rejections','New payout method'],
+    'Promotions': ['Promotion requirement','Promotion requirement mix','Goodwill credit pattern','Cashback share'],
+    'Marketplace behaviour': ['Self-dealing','Merchant concentration','High-liquidity spend',
+                              'Refund rate','Chargeback history','Pending orders','Payout velocity'],
+  };
+  const icon = s => s === 'risk' ? '<span class="risk">●</span>'
+                  : s === 'warn' ? '<span class="warnc">●</span>'
+                                 : '<span class="okc">●</span>';
+  let html = '';
+  Object.entries(GROUPS).forEach(([g, names]) => {
+    const rows = checks.filter(c => names.includes(c.name));
+    if(!rows.length) return;
+    html += '<div class="group"><b>' + g + '</b>' +
+      rows.map(c => '<div class="chk"><div class="ic">' + icon(c.state) + '</div>' +
+        '<div class="bd"><div class="nm">' + c.name + '</div>' +
+        '<div class="dt">' + c.detail + '</div></div>' +
+        '<div class="vl">' + c.value + '</div></div>').join('') + '</div>';
+  });
+  return html;
+}
+
+/* ==================================================================
+   CSV LOADING
+
+   A client exports reports from their own admin panel. Those exports are
+   never clean: the delimiter may be a semicolon, decimals may use a comma,
+   dates may be day-first, and the file may carry a byte-order mark. All of
+   that is handled here, because a tool that rejects the customer's own
+   export on the first try does not get a second try.
+
+   Nothing leaves the browser. The files are read locally and never uploaded.
+   ================================================================== */
+const norm = s => String(s).toLowerCase().replace(/[\s_\-\.]/g, '');
+
+/* ---- delimiter: whichever separator appears most outside quotes ---- */
+function sniffDelimiter(firstLine){
+  const count = {',':0, ';':0, '\t':0, '|':0};
+  let q = false;
+  for(const ch of firstLine){
+    if(ch === '"') q = !q;
+    else if(!q && count[ch] !== undefined) count[ch]++;
+  }
+  return Object.entries(count).sort((a, b) => b[1] - a[1])[0][0] || ',';
+}
+
+function parseCSV(text){
+  text = text.replace(/^﻿/, '');                       // strip BOM
+  const d = sniffDelimiter(text.split(/\r?\n/)[0] || '');
+  const rows = [];
+  let row = [], field = '', q = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){ field += '"'; i++; } else q = false; }
+      else field += c;
+    } else if(c === '"') q = true;
+    else if(c === d){ row.push(field); field = ''; }
+    else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+    else if(c !== '\r') field += c;
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  if(rows.length < 2) return {cols:[], rows:[]};
+
+  const cols = rows[0].map(norm);
+  const out = rows.slice(1)
+    .filter(r => r.some(x => String(x).trim() !== ''))
+    .map(r => { const o = {}; cols.forEach((c, i) => o[c] = String(r[i] ?? '').trim()); return o; });
+  return {cols, rows: out};
+}
+
+/* ---- field lookup that tolerates whatever the export called it ---- */
+function pick(row, ...names){
+  for(const n of names){
+    const k = norm(n);
+    if(row[k] !== undefined && row[k] !== '') return row[k];
+  }
+  return '';
+}
+
+/* ---- 1.234,56 and 1,234.56 both mean the same number ---- */
+function num(v){
+  if(v === '' || v == null) return 0;
+  let s = String(v).replace(/[^\d.,\-]/g, '');
+  const c = s.lastIndexOf(','), p = s.lastIndexOf('.');
+  if(c > p)      s = s.replace(/\./g, '').replace(',', '.');   // 1.234,56
+  else if(p > c) s = s.replace(/,/g, '');                       // 1,234.56
+  else           s = s.replace(',', '.');
+  const n = parseFloat(s);
+  return isFinite(n) ? n : 0;
+}
+
+/* ---- accept both 31.12.2026 and 2026-12-31 ---- */
+function dt(v){
+  const s = String(v || '').trim();
+  if(!s) return '';
+  let m = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})(?:[ T](\d{1,2}):(\d{2}))?/);
+  if(m) return m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0') +
+               ' ' + (m[4] || '00').padStart(2,'0') + ':' + (m[5] || '00');
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/);
+  if(m) return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0') +
+               ' ' + (m[4] || '00').padStart(2,'0') + ':' + (m[5] || '00');
+  return s;
+}
+
+const yes = v => /^(1|true|yes|y|evet|e|x)$/i.test(String(v || '').trim());
+
+/* ---- which report is this file? filename first, headers as a fallback ---- */
+function classify(filename, cols){
+  const n = norm(filename);
+  if(/payout|withdraw|cashout/.test(n)) return 'payouts';
+  if(/promo|bonus|credit/.test(n))      return 'promotions';
+  if(/topup|deposit|funding|load/.test(n)) return 'topups';
+  if(/order|purchase|transaction/.test(n)) return 'orders';
+  if(/account|customer|user|player/.test(n)) return 'accounts';
+
+  const has = c => cols.includes(norm(c));
+  if(has('payout_id') || has('payoutid')) return 'payouts';
+  if(has('requirement')) return 'promotions';
+  if(has('kyc') || has('registered')) return 'accounts';
+  if(has('category') || has('merchant')) return 'orders';
+  if(has('method')) return 'topups';
+  return null;
+}
+
+/* ---- turn the parsed files into the shape the checks expect ---- */
+function buildDataset(files){
+  const notes = [];
+  const byId = {};
+  const account = id => {
+    if(!byId[id]) byId[id] = {
+      id, username: id, tag: 'imported', registered: '', kyc: 'Verified',
+      ip: '', device_fp: '', payment_fp: '', crypto_wallet: null, referrer: '',
+      cashback_earned: 0, chargebacks: 0, seller_accounts_linked: [],
+      payout_method_added: null, rejection_history: [],
+      topups: [], orders: [], promos: [], past_payouts: [],
+    };
+    return byId[id];
+  };
+
+  const pending = [];
+  let latest = 0;
+  const seen = (d) => { const t = T(d); if(t && !isNaN(t)) latest = Math.max(latest, t); };
+
+  files.forEach(f => {
+    const kind = classify(f.name, f.cols);
+    if(!kind){ notes.push(f.name + ': could not tell what this file is'); return; }
+
+    f.rows.forEach(r => {
+      const id = pick(r, 'account_id', 'accountid', 'user_id', 'customer_id', 'id', 'account');
+      if(!id && kind !== 'payouts') return;
+
+      if(kind === 'accounts'){
+        const a = account(id);
+        a.username        = pick(r, 'username', 'name', 'email', 'account_name') || id;
+        a.registered      = dt(pick(r, 'registered', 'created', 'signup', 'registration_date'));
+        a.kyc             = pick(r, 'kyc', 'kyc_status', 'verification') || 'Verified';
+        a.ip              = pick(r, 'ip', 'last_ip', 'ip_address');
+        a.device_fp       = pick(r, 'device_fp', 'device', 'device_id', 'fingerprint');
+        a.payment_fp      = pick(r, 'payment_fp', 'card_fp', 'card_fingerprint', 'instrument');
+        a.crypto_wallet   = pick(r, 'crypto_wallet', 'wallet', 'wallet_address') || null;
+        a.referrer        = pick(r, 'referrer', 'referral', 'affiliate', 'ref');
+        a.cashback_earned = num(pick(r, 'cashback', 'cashback_earned', 'rewards'));
+        a.chargebacks     = num(pick(r, 'chargebacks', 'chargeback_count', 'disputes'));
+        const ls          = pick(r, 'linked_sellers', 'linked_seller', 'seller_accounts');
+        a.seller_accounts_linked = ls ? ls.split(/[;,|]/).map(x => x.trim()).filter(Boolean) : [];
+        const pm          = pick(r, 'payout_method_added', 'method_added', 'payout_added');
+        a.payout_method_added = pm ? dt(pm) : null;
+        seen(a.registered);
+      }
+
+      else if(kind === 'topups'){
+        const d = dt(pick(r, 'date', 'created', 'timestamp', 'time'));
+        account(id).topups.push({date: d,
+          amount: num(pick(r, 'amount', 'value', 'total', 'sum')),
+          method: pick(r, 'method', 'payment_method', 'channel', 'type') || 'Bank Transfer'});
+        seen(d);
+      }
+
+      else if(kind === 'orders'){
+        const d = dt(pick(r, 'date', 'created', 'timestamp', 'time'));
+        account(id).orders.push({date: d,
+          amount:   num(pick(r, 'amount', 'value', 'total', 'sum')),
+          merchant: pick(r, 'merchant', 'seller', 'store', 'shop') || '—',
+          category: pick(r, 'category', 'product_category', 'type') || '—',
+          refunded: yes(pick(r, 'refunded', 'is_refunded', 'refund')),
+          pending:  yes(pick(r, 'pending', 'is_pending', 'open', 'unsettled'))});
+        seen(d);
+      }
+
+      else if(kind === 'promotions'){
+        const d = dt(pick(r, 'date', 'granted', 'created'));
+        account(id).promos.push({date: d,
+          kind:        pick(r, 'kind', 'type', 'promotion_type') || 'Promo Credit',
+          amount:      num(pick(r, 'amount', 'credit', 'value')),
+          requirement: num(pick(r, 'requirement', 'required', 'target')),
+          completed:   num(pick(r, 'completed', 'progress', 'achieved')),
+          completed_in_high_liquidity:
+            num(pick(r, 'completed_in_high_liquidity', 'high_liquidity', 'excluded'))});
+        seen(d);
+      }
+
+      else if(kind === 'payouts'){
+        const acc = pick(r, 'account_id', 'accountid', 'user_id', 'customer_id', 'account');
+        if(!acc) return;
+        const d      = dt(pick(r, 'date', 'requested', 'created', 'timestamp'));
+        const amount = num(pick(r, 'amount', 'value', 'total', 'sum'));
+        const method = pick(r, 'method', 'payout_method', 'channel', 'type') || 'Bank Transfer';
+        const status = pick(r, 'status', 'state') || 'Pending';
+        seen(d);
+        if(/pending|waiting|review|open|bekle/i.test(status)){
+          pending.push({id: pick(r, 'payout_id', 'payoutid', 'id') || ('P-' + (pending.length + 1)),
+                        user: acc, amount, date: d, method});
+        } else {
+          account(acc).past_payouts.push({date: d, amount, method, status});
+        }
+      }
+    });
+  });
+
+  const users = Object.values(byId);
+  if(!users.length)   notes.push('no accounts found - is accounts.csv included?');
+  if(!pending.length) notes.push('no pending payouts found - check the status column in payouts.csv');
+
+  /* Accounts that only appear in the payout file still get reviewed, with
+     whatever is known. A missing file weakens the checks, it does not stop them. */
+  pending.forEach(p => account(p.user));
+
+  return {
+    dataset: {
+      generated: '',
+      today: latest ? new Date(latest).toISOString().slice(0, 16).replace('T', ' ')
+                    : new Date().toISOString().slice(0, 16).replace('T', ' '),
+      high_liquidity_categories: DEMO_ORIGINAL.high_liquidity_categories,
+      users: Object.values(byId),
+      pending_payouts: pending,
+    },
+    notes,
+  };
+}
+
+/* ---- wiring ---- */
+const DEMO_ORIGINAL = JSON.parse(JSON.stringify(DEMO));
+
+function applyDataset(data, label, notes){
+  DEMO = data;
+  try{ rebuild(); }
+  catch(err){
+    document.getElementById('loadNote').innerHTML =
+      '<span class="loadwarn">Could not read those files: ' + err.message + '</span>';
+    return;
+  }
+  document.getElementById('srcName').textContent = label;
+  const note = document.getElementById('loadNote');
+  if(notes && notes.length)
+    note.innerHTML = '<span class="loadwarn">' + notes.join(' &middot; ') + '</span>';
+  else
+    note.innerHTML = '<span class="loaded">' + DEMO.pending_payouts.length +
+                     ' payouts &middot; ' + DEMO.users.length + ' accounts loaded</span>';
+}
+
+document.getElementById('csvInput').addEventListener('change', async e => {
+  const files = [...e.target.files];
+  if(!files.length) return;
+  const parsed = [];
+  for(const f of files){
+    try{
+      const text = await f.text();
+      const {cols, rows} = parseCSV(text);
+      parsed.push({name: f.name, cols, rows});
+    }catch(err){
+      parsed.push({name: f.name, cols: [], rows: []});
+    }
+  }
+  const {dataset, notes} = buildDataset(parsed);
+  if(!dataset.pending_payouts.length){
+    document.getElementById('loadNote').innerHTML =
+      '<span class="loadwarn">Nothing to review. ' + notes.join(' &middot; ') + '</span>';
+    return;
+  }
+  applyDataset(dataset, files.length + ' file' + (files.length === 1 ? '' : 's') + ' from you', notes);
+  e.target.value = '';
+});
+
+document.getElementById('resetBtn').onclick = () =>
+  applyDataset(JSON.parse(JSON.stringify(DEMO_ORIGINAL)), 'Demo data', null);
+
+document.getElementById('specBtn').onclick = () =>
+  document.getElementById('sheet').classList.toggle('open');
+
+document.getElementById('tplBtn').onclick = () => {
+  const TEMPLATES = {
+    'accounts.csv': 'account_id,username,registered,kyc,ip,device_fp,payment_fp,crypto_wallet,referrer,cashback,chargebacks,linked_sellers,payout_method_added',
+    'payouts.csv' : 'payout_id,account_id,amount,date,method,status',
+    'orders.csv'  : 'account_id,date,amount,merchant,category,refunded,pending',
+    'topups.csv'  : 'account_id,date,amount,method',
+    'promotions.csv': 'account_id,date,kind,amount,requirement,completed,completed_in_high_liquidity',
+  };
+  Object.entries(TEMPLATES).forEach(([name, head], i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([head + '\n'], {type: 'text/csv'}));
+      a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }, i * 250);
+  });
+};
+
+rebuild();
+</script>
+</body>
+</html>
